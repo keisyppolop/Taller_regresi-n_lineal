@@ -1,0 +1,287 @@
+---
+title: "Taller Regresión Lineal Simple"
+author: "Fernando Cabrera y Keisy Polo"
+date: "`r format(Sys.Date(), '%d de %B de %Y')`"
+output:
+  html_document:
+    toc: true
+    toc_float:
+      collapsed: true
+      smooth_scroll: true
+    toc_depth: 2
+    theme: flatly
+    df_print: kable
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+library(knitr)
+library(ggplot2)
+```
+
+# Sección 7.4. Ejercicio 9
+
+Variables:
+
+- $x$: densidad (g/cm$^3$), variable explicativa.
+- $y$: porcentaje de ceniza, variable respuesta.
+
+Cargamos los datos
+
+```{r datos}
+x <- c(1.25, 1.325, 1.375, 1.45, 1.55)   # Densidad (g/cm^3)
+y <- c(1.93, 4.63, 8.95, 15.05, 23.31)   # Porcentaje de ceniza
+n <- length(x)
+
+datos <- data.frame(Densidad = x, Ceniza = y)
+kable(datos)
+```
+
+## Inciso 1: Diagrama de dispersión y verificación del modelo lineal
+
+Graficamos $y$ contra $x$. Si los puntos siguen aproximadamente una línea recta (sin curvatura marcada), un modelo lineal es razonable.
+
+```{r dispersion}
+ggplot(datos, aes(x = Densidad, y = Ceniza)) +
+  geom_point(size = 3.5, color = "#2C7BB6") +
+  labs(title = "Porcentaje de ceniza vs. densidad",
+       x = "Densidad (g/cm³)", y = "Porcentaje de ceniza") +
+  theme_minimal(base_size = 13)
+```
+
+El diagrama de dispersión muestra una relación positiva y aproximadamente lineal entre la densidad y el porcentaje de ceniza. Los puntos se alinean cerca de una recta y no se observan valores atípicos, por lo que un modelo lineal simple es adecuado.
+
+
+## Inciso 2: Recta de mínimos cuadrados
+
+El modelo es
+$$
+y_i = \beta_0 + \beta_1 x_i + \varepsilon_i,
+$$
+y la recta ajustada es $\hat{y} = \hat{\beta}_0 + \hat{\beta}_1 x$, con
+
+$$
+\hat{\beta}_1 = \frac{\sum_{i=1}^{n} (x_i - \bar{x})(y_i - \bar{y})}{\sum_{i=1}^{n} (x_i - \bar{x})^2},
+\qquad
+\hat{\beta}_0 = \bar{y} - \hat{\beta}_1 \bar{x}.
+$$
+
+### Paso 1: Medias muestrales
+
+```{r medias}
+xbar <- mean(x)
+ybar <- mean(y)
+c(xbar = xbar, ybar = ybar)
+```
+
+### Paso 2: Sumas de cuadrados y productos cruzados
+
+$$
+S_{xx} = \sum_{i=1}^{n} (x_i - \bar{x})^2, \qquad
+S_{xy} = \sum_{i=1}^{n} (x_i - \bar{x})(y_i - \bar{y}), \qquad
+S_{yy} = \sum_{i=1}^{n} (y_i - \bar{y})^2.
+$$
+
+```{r sumas}
+Sxx <- sum((x - xbar)^2)
+Sxy <- sum((x - xbar) * (y - ybar))
+Syy <- sum((y - ybar)^2)
+c(Sxx = Sxx, Sxy = Sxy, Syy = Syy)
+```
+
+### Paso 3: Estimadores $\hat{\beta}_1$ y $\hat{\beta}_0$
+
+```{r coeficientes}
+b1 <- Sxy / Sxx
+b0 <- ybar - b1 * xbar
+c(beta0_hat = b0, beta1_hat = b1)
+```
+
+La recta de mínimos cuadrados es
+
+```{r ecuacion, results='asis', echo=FALSE}
+signo <- ifelse(b1 >= 0, "+", "-")
+cat(sprintf("$$\\hat{y} = %.4f %s %.4f \\, x$$",
+            b0, signo, abs(b1)))
+```
+
+
+### Verificación con `lm()`
+
+```{r lm}
+modelo <- lm(Ceniza ~ Densidad, data = datos)
+summary(modelo)
+```
+
+Los coeficientes coinciden con los calculados a mano:
+
+```{r comparacion}
+kable(data.frame(
+  Coeficiente = c("Intercepto", "Pendiente"),
+  A_mano = c(b0, b1),
+  lm = unname(coef(modelo))
+), digits = 5)
+```
+
+---
+
+## Inciso 3: Cambio en el porcentaje de ceniza si la densidad difiere en 0.1 g/cm³
+
+La pendiente $\hat{\beta}_1$ indica el cambio en $\hat{y}$ por cada unidad de $x$. Si $\Delta x = 0.1$:
+
+$$
+\Delta \hat{y} = \hat{\beta}_1 \, \Delta x = (`r round(b1, 4)`)(0.1).
+$$
+
+```{r delta}
+delta_x <- 0.1
+delta_y <- b1 * delta_x
+delta_y
+```
+
+**Respuesta:** se predice que el porcentaje de ceniza difiera en aproximadamente `r round(delta_y, 3)` puntos porcentuales.
+
+***
+## Inciso 4: Pronóstico para $x = 1.40$ g/cm³
+
+$$
+\hat{y}(1.40) = \hat{\beta}_0 + \hat{\beta}_1 (1.40).
+$$
+
+```{r pronostico}
+x0 <- 1.40
+y0 <- b0 + b1 * x0
+y0
+
+# Comprobación con predict
+predict(modelo, newdata = data.frame(Densidad = x0))
+```
+
+**Respuesta:** para partículas con densidad 1.40 g/cm$^3$ se pronostica un porcentaje de ceniza de aproximadamente `r round(y0, 3)`.
+
+Como $1.25 \le 1.40 \le 1.55$, el valor de $x$ está dentro del rango de los datos observados, por lo que el pronóstico es confiable.
+
+***
+
+## Inciso 5: Valores ajustados
+
+Para cada observación $i = 1, \dots, 5$:
+$$
+\hat{y}_i = \hat{\beta}_0 + \hat{\beta}_1 x_i .
+$$
+
+```{r ajustados}
+yhat <- b0 + b1 * x
+
+tabla_ajuste <- data.frame(i = 1:n, x_i = x, y_i = y, yhat_i = yhat)
+kable(tabla_ajuste, digits = 4,
+      col.names = c("i", "$x_i$", "$y_i$", "$\\hat{y}_i$"),
+      caption = "Valores ajustados")
+```
+
+***
+## Inciso 6: Residuos
+
+El residuo de cada observación es
+$$
+e_i = y_i - \hat{y}_i .
+$$
+
+```{r residuos}
+e <- y - yhat
+
+tabla_res <- data.frame(i = 1:n, x_i = x, y_i = y, yhat_i = yhat, e_i = e)
+kable(tabla_res, digits = 4,
+      col.names = c("i", "$x_i$", "$y_i$", "$\\hat{y}_i$", "$e_i$"),
+      caption = "Residuos")
+```
+
+Propiedad de verificación: con intercepto en el modelo, $\sum_{i=1}^{n} e_i = 0$.
+
+```{r suma-residuos}
+sum(e)
+```
+En efecto, esta suma es aproximadamente 0.
+
+
+### ¿Qué punto tiene el residuo de mayor magnitud?
+
+```{r mayor-residuo}
+i_max <- which.max(abs(e))
+cat("Punto i =", i_max,
+    "\nDensidad x =", x[i_max],
+    "\nCeniza observada y =", y[i_max],
+    "\nCeniza ajustada yhat =", round(yhat[i_max], 4),
+    "\nResiduo e =", round(e[i_max], 4))
+```
+
+**Respuesta:** el residuo de mayor magnitud corresponde al punto con $x = `r x[i_max]`$ (primer punto), con $e_{`r i_max`} = `r round(e[i_max], 4)`$.
+
+
+## Inciso 7: Correlación entre densidad y porcentaje de ceniza
+
+$$
+r = \frac{S_{xy}}{\sqrt{S_{xx} \, S_{yy}}} .
+$$
+
+```{r correlacion}
+r <- Sxy / sqrt(Sxx * Syy)
+r
+
+# Comprobación con cor()
+cor(x, y)
+```
+
+**Respuesta:** $r = `r round(r, 4)`$, una correlación lineal positiva muy fuerte, lo que respalda el uso del modelo lineal.
+
+---
+
+## Inciso 8: Sumas de cuadrados
+
+Definimos:
+
+$$
+\text{SCT} = \sum_{i=1}^{n} (y_i - \bar{y})^2, \qquad
+\text{SCR} = \sum_{i=1}^{n} (\hat{y}_i - \bar{y})^2, \qquad
+\text{SCE} = \sum_{i=1}^{n} (y_i - \hat{y}_i)^2 .
+$$
+
+con la identidad $\text{SCT} = \text{SCR} + \text{SCE}$.
+
+```{r sumas-cuadrados}
+SCT <- sum((y - ybar)^2)        # Suma total de cuadrados
+SCR <- sum((yhat - ybar)^2)     # Suma de cuadrados de regresión
+SCE <- sum((y - yhat)^2)        # Suma de cuadrados del error
+
+kable(data.frame(
+  Suma = c("SCR (regresión)", "SCE (error)", "SCT (total)"),
+  Valor = c(SCR, SCE, SCT)
+), digits = 4)
+```
+
+Verificamos la identidad $\text{SCT} = \text{SCR} + \text{SCE}$:
+
+```{r identidad}
+c(SCR_mas_SCE = SCR + SCE, SCT = SCT)
+all.equal(SCT, SCR + SCE)
+```
+
+---
+
+## Inciso 9: Cociente $\text{SCR}/\text{SCT}$ y su relación con $r$
+
+$$
+\frac{\text{SCR}}{\text{SCT}} = R^2 .
+$$
+
+```{r r2}
+R2 <- SCR / SCT
+R2
+
+# Comparación con r^2 y con el R^2 de lm()
+c(SCR_SCT = R2, r_cuadrado = r^2, R2_lm = summary(modelo)$r.squared)
+```
+
+**Relación:** el cociente $\text{SCR}/\text{SCT}$ es el coeficiente de determinación $R^2$ y, en regresión lineal simple, coincide con el cuadrado del coeficiente de correlación:
+
+
