@@ -284,4 +284,188 @@ c(SCR_SCT = R2, r_cuadrado = r^2, R2_lm = summary(modelo)$r.squared)
 
 **Relación:** el cociente $\text{SCR}/\text{SCT}$ es el coeficiente de determinación $R^2$ y, en regresión lineal simple, coincide con el cuadrado del coeficiente de correlación:
 
+# Sección 7.4. Ejercicio 10.
 
+Variables:
+
+- $x$: variable explicativa.
+- $y$: variable respuesta.
+- $z = \ln y$: transformación de $y$.
+
+Cargamos los datos
+
+```{r datos-10}
+x10 <- 1:10
+y10 <- c(0.2, 0.3, 0.5, 0.5, 1.3, 2.3, 2.9, 4.5, 8.7, 12.0)
+z10 <- c(-1.61, -1.20, -0.69, -0.69, 0.26, 0.83, 1.06, 1.50, 2.16, 2.48)
+n10 <- length(x10)
+
+datos10 <- data.frame(x = x10, y = y10, z = z10)
+kable(datos10, col.names = c("$x$", "$y$", "$z = \\ln y$"))
+```
+
+## Inciso 1: Diagrama de dispersión de $(x, y)$
+
+```{r dispersion-xy-10}
+ggplot(datos10, aes(x = x, y = y)) +
+  geom_point(size = 3.5, color = "#2C7BB6") +
+  labs(title = "Gráfico de y contra x",
+       x = "x", y = "y") +
+  theme_minimal(base_size = 13)
+```
+
+El diagrama de dispersión muestra que la relación entre $x$ y $y$ no es lineal: $y$ crece lentamente para valores pequeños de $x$ y cada vez más rápido para valores grandes, lo que describe una curva y no una recta.
+
+***
+
+## Inciso 2: ¿Se debe usar la recta de mínimos cuadrados para pronosticar $y$?
+
+Para comprobarlo, ajustamos la recta de mínimos cuadrados a los puntos $(x, y)$ y la dibujamos sobre el diagrama.
+
+```{r recta-xy-10}
+modelo10 <- lm(y ~ x, data = datos10)
+
+ggplot(datos10, aes(x = x, y = y)) +
+  geom_point(size = 3.5, color = "#2C7BB6") +
+  geom_smooth(method = "lm", se = FALSE, color = "#D7191C") +
+  labs(title = "Recta de mínimos cuadrados sobre los puntos (x, y)",
+       x = "x", y = "y") +
+  theme_minimal(base_size = 13)
+```
+
+Revisamos también los residuos $e_i = y_i - \hat{y}_i$:
+
+```{r residuos-xy-10}
+e10 <- resid(modelo10)
+
+ggplot(data.frame(x = x10, e = e10), aes(x = x, y = e)) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "gray40") +
+  geom_point(size = 3.5, color = "#D7191C") +
+  labs(title = "Residuos vs. x", x = "x", y = "Residuo") +
+  theme_minimal(base_size = 13)
+```
+
+**Respuesta:** No. El diagrama de dispersión muestra que la relación entre $x$ y $y$ no es lineal, sino una curva creciente. Al ajustar la recta de mínimos cuadrados, los residuos no se distribuyen al azar alrededor de cero, sino que siguen un patrón en forma de "U" (positivos, luego negativos y luego positivos). Esto indica que el modelo lineal no describe bien los datos, por lo que no es adecuado usar la recta para pronosticar $y$ cuando $x = 4.5$.
+
+***
+
+## Inciso 3: Diagrama de dispersión de $(x, z)$, con $z = \ln y$
+
+```{r dispersion-xz-10}
+ggplot(datos10, aes(x = x, y = z)) +
+  geom_point(size = 3.5, color = "#2C7BB6") +
+  labs(title = "Gráfico de z = ln(y) contra x",
+       x = "x", y = "z = ln(y)") +
+  theme_minimal(base_size = 13)
+```
+
+El diagrama de dispersión de $(x, z)$ muestra una relación aproximadamente lineal y creciente entre $x$ y $z = \ln y$. Al transformar $y$ con el logaritmo natural, la curvatura desaparece, por lo que un modelo lineal sí es adecuado para $z$.
+
+***
+***
+
+## Inciso 4: Pronóstico de $z$ cuando $x = 4.5$
+
+### Paso 1: Recta de mínimos cuadrados para $(x, z)$
+
+El modelo es $z_i = \beta_0 + \beta_1 x_i + \varepsilon_i$ y la recta ajustada es $\hat{z} = \hat{\beta}_0 + \hat{\beta}_1 x$.
+
+```{r modelo-xz-10}
+modelo_z10 <- lm(z ~ x, data = datos10)
+b0_z <- coef(modelo_z10)[1]
+b1_z <- coef(modelo_z10)[2]
+c(beta0_hat = unname(b0_z), beta1_hat = unname(b1_z))
+```
+
+```{r ecuacion-z-10, results='asis', echo=FALSE}
+signo_z <- ifelse(b1_z >= 0, "+", "-")
+cat(sprintf("$$\\hat{z} = %.4f %s %.4f \\, x$$",
+            b0_z, signo_z, abs(b1_z)))
+```
+
+### Paso 2: Pronóstico en $x = 4.5$
+
+$$
+\hat{z}(4.5) = \hat{\beta}_0 + \hat{\beta}_1 (4.5).
+$$
+
+```{r pronostico-z-10}
+x0_10 <- 4.5
+z0 <- unname(b0_z + b1_z * x0_10)
+z0
+
+# Comprobación con predict
+predict(modelo_z10, newdata = data.frame(x = x0_10))
+```
+
+### Paso 3: ¿Es un método adecuado?
+
+Dibujamos la recta sobre los puntos y revisamos los residuos.
+
+```{r recta-xz-10}
+ggplot(datos10, aes(x = x, y = z)) +
+  geom_point(size = 3.5, color = "#2C7BB6") +
+  geom_smooth(method = "lm", se = FALSE, color = "#D7191C") +
+  labs(title = "Recta de mínimos cuadrados sobre los puntos (x, z)",
+       x = "x", y = "z = ln(y)") +
+  theme_minimal(base_size = 13)
+```
+
+```{r residuos-xz-10}
+e_z10 <- resid(modelo_z10)
+
+ggplot(data.frame(x = x10, e = e_z10), aes(x = x, y = e)) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "gray40") +
+  geom_point(size = 3.5, color = "#D7191C") +
+  labs(title = "Residuos vs. x", x = "x", y = "Residuo") +
+  theme_minimal(base_size = 13)
+```
+
+Para medir qué tan bien se ajusta la recta, calculamos $R^2 = r^2$.
+
+```{r r2-xz-10}
+cor(x10, z10)^2
+```
+
+**Respuesta:** el valor pronosticado es $\hat{z}(4.5) \approx -0.0573$. Sí es un método adecuado: los puntos $(x, z)$ siguen una relación lineal, la recta se ajusta muy bien a los datos ($R^2 \approx 0.987$) y los residuos son pequeños y no muestran un patrón claro. Además, $x = 4.5$ está dentro del rango de los datos observados.
+
+***
+
+## Inciso 5: Pronóstico de $y$ a partir de $\hat{z}$
+
+Sea $\hat{z}$ el valor pronosticado en el inciso 4. Definimos
+
+$$
+\hat{y} = e^{\hat{z}} .
+$$
+
+```{r pronostico-y-10}
+y_hat0 <- exp(z0)
+y_hat0
+```
+
+Para comparar, ubicamos este valor sobre los puntos originales $(x, y)$ junto con el pronóstico de la recta del inciso 2:
+
+```{r comparacion-10}
+y_recta0 <- unname(predict(modelo10, newdata = data.frame(x = x0_10)))
+
+kable(data.frame(
+  Método = c("Recta sobre (x, y)", "exp(z-hat) con la recta sobre (x, z)"),
+  Pronóstico = c(y_recta0, y_hat0)
+), digits = 4)
+```
+
+```{r curva-10}
+curva <- data.frame(x = seq(1, 10, length.out = 200))
+curva$y <- exp(b0_z + b1_z * curva$x)
+
+ggplot(datos10, aes(x = x, y = y)) +
+  geom_point(size = 3.5, color = "#2C7BB6") +
+  geom_line(data = curva, aes(x = x, y = y), color = "#D7191C") +
+  geom_point(aes(x = x0_10, y = y_hat0), color = "#1A9641", size = 4, shape = 17) +
+  labs(title = expression("Curva " * e^hat(z) * " sobre los puntos (x, y)"),
+       x = "x", y = "y") +
+  theme_minimal(base_size = 13)
+```
+
+**Respuesta:** $\hat{y} = e^{\hat{z}} = e^{-0.0573} \approx 0.9443$. Es un pronosticador razonable porque $z = \ln y$ tiene una relación lineal con $x$, así que $y$ se comporta como una función exponencial de $x$, que es la curva que muestra el diagrama de $(x, y)$. Al aplicar la exponencial a $\hat{z}$ se regresa a la escala original de $y$, y el valor obtenido (0.9443) está entre los valores observados en $x = 4$ ($y = 0.5$) y $x = 5$ ($y = 1.3$), mientras que la recta sobre $(x, y)$ daba 2.1491, muy lejos de esos valores.
