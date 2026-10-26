@@ -41,7 +41,7 @@ kable(datos)
 
 Graficamos $y$ contra $x$. Si los puntos siguen aproximadamente una línea recta (sin curvatura marcada), un modelo lineal es razonable.
 
-```{r dispersion}
+```{r dispersion1}
 ggplot(datos, aes(x = Densidad, y = Ceniza)) +
   geom_point(size = 3.5, color = "#2C7BB6") +
   labs(title = "Porcentaje de ceniza vs. densidad",
@@ -82,7 +82,7 @@ S_{xy} = \sum_{i=1}^{n} (x_i - \bar{x})(y_i - \bar{y}), \qquad
 S_{yy} = \sum_{i=1}^{n} (y_i - \bar{y})^2.
 $$
 
-```{r sumas}
+```{r sumas1}
 Sxx <- sum((x - xbar)^2)
 Sxy <- sum((x - xbar) * (y - ybar))
 Syy <- sum((y - ybar)^2)
@@ -91,7 +91,7 @@ c(Sxx = Sxx, Sxy = Sxy, Syy = Syy)
 
 ### Paso 3: Estimadores $\hat{\beta}_1$ y $\hat{\beta}_0$
 
-```{r coeficientes}
+```{r coeficientes1}
 b1 <- Sxy / Sxx
 b0 <- ybar - b1 * xbar
 c(beta0_hat = b0, beta1_hat = b1)
@@ -99,7 +99,7 @@ c(beta0_hat = b0, beta1_hat = b1)
 
 La recta de mínimos cuadrados es
 
-```{r ecuacion, results='asis', echo=FALSE}
+```{r ecuacion1, results='asis', echo=FALSE}
 signo <- ifelse(b1 >= 0, "+", "-")
 cat(sprintf("$$\\hat{y} = %.4f %s %.4f \\, x$$",
             b0, signo, abs(b1)))
@@ -108,14 +108,14 @@ cat(sprintf("$$\\hat{y} = %.4f %s %.4f \\, x$$",
 
 ### Verificación con `lm()`
 
-```{r lm}
+```{r lm1}
 modelo <- lm(Ceniza ~ Densidad, data = datos)
 summary(modelo)
 ```
 
 Los coeficientes coinciden con los calculados a mano:
 
-```{r comparacion}
+```{r comparacion1}
 kable(data.frame(
   Coeficiente = c("Intercepto", "Pendiente"),
   A_mano = c(b0, b1),
@@ -148,7 +148,7 @@ $$
 \hat{y}(1.40) = \hat{\beta}_0 + \hat{\beta}_1 (1.40).
 $$
 
-```{r pronostico}
+```{r pronostico1}
 x0 <- 1.40
 y0 <- b0 + b1 * x0
 y0
@@ -187,7 +187,7 @@ $$
 e_i = y_i - \hat{y}_i .
 $$
 
-```{r residuos}
+```{r residuos1}
 e <- y - yhat
 
 tabla_res <- data.frame(i = 1:n, x_i = x, y_i = y, yhat_i = yhat, e_i = e)
@@ -198,7 +198,7 @@ kable(tabla_res, digits = 4,
 
 Propiedad de verificación: con intercepto en el modelo, $\sum_{i=1}^{n} e_i = 0$.
 
-```{r suma-residuos}
+```{r suma-residuos1}
 sum(e)
 ```
 En efecto, esta suma es aproximadamente 0.
@@ -274,7 +274,7 @@ $$
 \frac{\text{SCR}}{\text{SCT}} = R^2 .
 $$
 
-```{r r2}
+```{r r2 - 2}
 R2 <- SCR / SCT
 R2
 
@@ -282,7 +282,17 @@ R2
 c(SCR_SCT = R2, r_cuadrado = r^2, R2_lm = summary(modelo)$r.squared)
 ```
 
-**Relación:** el cociente $\text{SCR}/\text{SCT}$ es el coeficiente de determinación $R^2$ y, en regresión lineal simple, coincide con el cuadrado del coeficiente de correlación:
+**Relación:** el cociente $\text{SCR}/\text{SCT}$ es el coeficiente de determinación $R^2$ y, en regresión lineal simple, coincide con el cuadrado del coeficiente de correlación.
+
+$$
+\frac{\text{SCR}}{\text{SCT}} = r^2 .
+$$
+
+En este caso $\dfrac{\text{SCR}}{\text{SCT}} = `r round(R2, 4)`$ y $r^2 = `r round(r^2, 4)`$, que coinciden.
+
+Esto significa que aproximadamente el `r round(100 * R2, 2)`% de la variación del porcentaje de ceniza se explica por la densidad.
+
+---
 
 # Sección 7.4. Ejercicio 10.
 
@@ -362,7 +372,7 @@ ggplot(datos10, aes(x = x, y = z)) +
 El diagrama de dispersión de $(x, z)$ muestra una relación aproximadamente lineal y creciente entre $x$ y $z = \ln y$. Al transformar $y$ con el logaritmo natural, la curvatura desaparece, por lo que un modelo lineal sí es adecuado para $z$.
 
 ***
-***
+
 
 ## Inciso 4: Pronóstico de $z$ cuando $x = 4.5$
 
@@ -470,8 +480,10 @@ ggplot(datos10, aes(x = x, y = y)) +
 
 **Respuesta:** $\hat{y} = e^{\hat{z}} = e^{-0.0573} \approx 0.9443$. Es un pronosticador razonable porque $z = \ln y$ tiene una relación lineal con $x$, así que $y$ se comporta como una función exponencial de $x$, que es la curva que muestra el diagrama de $(x, y)$. Al aplicar la exponencial a $\hat{z}$ se regresa a la escala original de $y$, y el valor obtenido (0.9443) está entre los valores observados en $x = 4$ ($y = 0.5$) y $x = 5$ ($y = 1.3$), mientras que la recta sobre $(x, y)$ daba 2.1491, muy lejos de esos valores.
 
+---
 
-## Sección 7.10. Ejercicio 1.
+
+# Sección 7.10. Ejercicio 1.
 
 Variables:
 
@@ -480,7 +492,7 @@ Variables:
 
 Cargamos los datos
 
-```{r datos}
+```{r datos3}
 x <- c(0.01, 0.06, 0.58, 2.24, 15.55, 276.02)   
 y <- c(3.32, 4.05, 5.69, 7.06, 8.17, 9.36)      
 n <- length(x)
@@ -491,7 +503,7 @@ kable(datos)
 
 Antes de ajustar cualquier modelo, miramos la forma de los datos:
 
-```{r dispersion}
+```{r dispersion2}
 ggplot(datos, aes(x = Volumen, y = Ceniza)) +
   geom_point(size = 3.5, color = "#2C7BB6") +
   labs(title = "Porcentaje de ceniza vs. volumen",
@@ -503,7 +515,7 @@ El volumen abarca varios órdenes de magnitud (de 0.01 a 276.02): cinco de los s
 
 ---
 
-## Inciso a: Recta de mínimos cuadrados de $y$ sobre $x$
+## Inciso 1: Recta de mínimos cuadrados de $y$ sobre $x$
 
 El modelo es
 $$
@@ -599,7 +611,7 @@ Respuesta: la recta es $\hat{y} = `r round(b0_a, 4)` + `r round(b1_a, 4)`\,x$, c
 
 ---
 
-## Inciso b: Recta de mínimos cuadrados de $y$ sobre $\ln(x)$
+## Inciso 2: Recta de mínimos cuadrados de $y$ sobre $\ln(x)$
 
 Definimos $u = \ln(x)$ y ajustamos $\hat{y} = \hat{\beta}_0 + \hat{\beta}_1 u$.
 
@@ -674,7 +686,7 @@ Respuesta: la recta es $\hat{y} = `r round(b0_b, 4)` + `r round(b1_b, 4)`\,\ln(x
 
 ---
 
-## Inciso c: Recta de mínimos cuadrados de $y$ sobre $\sqrt{x}$
+## Inciso 3: Recta de mínimos cuadrados de $y$ sobre $\sqrt{x}$
 
 Definimos $v = \sqrt{x}$ y ajustamos $\hat{y} = \hat{\beta}_0 + \hat{\beta}_1 v$.
 
@@ -787,7 +799,7 @@ Conclusión: el modelo más adecuado es `r mejor`, pues tiene el mayor $R^2$ (`r
 
 ---
 
-## Inciso d: Pronóstico para un volumen de 50 cm³
+## Inciso 4: Pronóstico para un volumen de 50 cm³
 
 Con el modelo $\hat{y} = \hat{\beta}_0 + \hat{\beta}_1 \ln(x)$:
 
@@ -795,7 +807,7 @@ $$
 \hat{y}(50) = \hat{\beta}_0 + \hat{\beta}_1 \ln(50).
 $$
 
-```{r pronostico}
+```{r pronostico2}
 x0 <- 50
 u0 <- log(x0)
 y0 <- b0_b + b1_b * u0
@@ -813,7 +825,7 @@ Nota: el enunciado escribe "50 m³", pero los datos están en cm³, así que se 
 
 ---
 
-## Inciso e: Intervalo de confianza del 95% para la media de $y$ en $x = 50$
+## Inciso 5: Intervalo de confianza del 95% para la media de $y$ en $x = 50$
 
 El intervalo de confianza para $E(y \mid x_0)$ es
 
@@ -857,7 +869,9 @@ Respuesta: con una confianza del 95%, el porcentaje promedio de ceniza de las pa
 
 Este intervalo es para la media del porcentaje de ceniza en $x = 50$, no para una partícula individual; para una observación individual se necesitaría un intervalo de predicción, que es más amplio.
 
-## Sección 7.10. Ejercicio 3.
+***
+
+# Sección 7.10. Ejercicio 3.
 
 Variables:
 
@@ -866,7 +880,7 @@ Variables:
 
 Cargamos los datos
 
-```{r datos}
+```{r datos-tabla}
 x <- c(47.33, 9.6, 15.8, 24.3, 23.0, 16.3, 39.8, 29.94, 10.9, 8.63, 28.64, 18.21, 33.0, 34.0)  # Distancia escalada
 y <- c(1.4, 15.7, 2.54, 1.14, 0.889, 1.65, 1.4, 1.02, 4.57, 6.6, 1.02, 3.94, 1.4, 1.4)        # VMP (mm/s)
 n <- length(x)
@@ -877,9 +891,9 @@ kable(datos)
 
 ---
 
-## Inciso a: Gráfico de la VMP contra la distancia escalada
+## Inciso 1: Gráfico de la VMP contra la distancia escalada
 
-```{r dispersion}
+```{r dispersion3}
 ggplot(datos, aes(x = Distancia, y = VMP)) +
   geom_point(size = 3.5, color = "#2C7BB6") +
   labs(title = "VMP vs. distancia escalada",
@@ -895,7 +909,7 @@ Respuesta: la relación no parece lineal. La VMP disminuye al aumentar la distan
 
 ---
 
-## Inciso b: Recta de mínimos cuadrados para $\ln(\text{VMP}) = \beta_0 + \beta_1 \ln(\text{distancia escalada}) + \epsilon$
+## Inciso 2: Recta de mínimos cuadrados para $\ln(\text{VMP}) = \beta_0 + \beta_1 \ln(\text{distancia escalada}) + \epsilon$
 
 Definimos $u = \ln(x)$ y $w = \ln(y)$. El modelo es
 $$
@@ -911,7 +925,7 @@ $$
 
 ### Paso 1: Transformación, medias y sumas de cuadrados
 
-```{r sumas}
+```{r sumas2}
 u <- log(x)
 w <- log(y)
 
@@ -927,7 +941,7 @@ c(ubar = ubar, wbar = wbar, Suu = Suu, Suw = Suw, Sww = Sww)
 
 ### Paso 2: Estimadores $\hat{\beta}_1$ y $\hat{\beta}_0$
 
-```{r coeficientes}
+```{r coeficientes2}
 b1 <- Suw / Suu
 b0 <- wbar - b1 * ubar
 c(beta0_hat = b0, beta1_hat = b1)
@@ -935,7 +949,7 @@ c(beta0_hat = b0, beta1_hat = b1)
 
 La recta de mínimos cuadrados es
 
-```{r ecuacion, results='asis', echo=FALSE}
+```{r ecuacion2, results='asis', echo=FALSE}
 signo <- ifelse(b1 >= 0, "+", "-")
 cat(sprintf("$$\\widehat{\\ln(\\text{VMP})} = %.4f %s %.4f \\, \\ln(\\text{distancia escalada})$$",
             b0, signo, abs(b1)))
@@ -943,12 +957,12 @@ cat(sprintf("$$\\widehat{\\ln(\\text{VMP})} = %.4f %s %.4f \\, \\ln(\\text{dista
 
 ### Verificación con `lm()`
 
-```{r lm}
+```{r lm2}
 modelo <- lm(log(VMP) ~ log(Distancia), data = datos)
 summary(modelo)
 ```
 
-```{r comparacion}
+```{r comparacion2}
 kable(data.frame(
   Coeficiente = c("Intercepto", "Pendiente"),
   A_mano = c(b0, b1),
@@ -962,7 +976,7 @@ $$
 \hat{w}_i = \hat{\beta}_0 + \hat{\beta}_1 u_i, \qquad e_i = w_i - \hat{w}_i .
 $$
 
-```{r residuos}
+```{r residuos2}
 what <- b0 + b1 * u
 e <- w - what
 
@@ -975,7 +989,7 @@ kable(data.frame(i = 1:n, x_i = x, u_i = u, w_i = w, what_i = what, e_i = e),
 
 Propiedad de verificación: con intercepto en el modelo, $\sum_{i=1}^{n} e_i = 0$.
 
-```{r suma-residuos}
+```{r suma-residuos2}
 sum(e)
 ```
 
@@ -988,7 +1002,7 @@ ggplot(data.frame(what = what, e = e), aes(x = what, y = e)) +
   theme_minimal(base_size = 13)
 ```
 
-```{r r2}
+```{r r2 - 1}
 R2 <- summary(modelo)$r.squared
 s <- summary(modelo)$sigma
 c(R2 = R2, s = s)
@@ -1008,11 +1022,14 @@ ggplot(data.frame(u = u, w = w), aes(x = u, y = w)) +
 Sí, el modelo lineal parece adecuado. Las razones son:
 
 - Ajuste: $R^2 = `r round(R2, 4)`$, es decir, el modelo explica cerca del `r round(100 * R2)`% de la variación de $\ln(\text{VMP})$. Es un ajuste bueno, aunque no perfecto.
+
 - Residuos: en el gráfico los puntos quedan repartidos por encima y por debajo de cero, sin una forma clara (ni curva ni embudo). Eso es lo que se espera de un buen modelo.
-- Dispersión:hay cierta variación (el residuo más grande es `r round(max(abs(e)), 2)`), pero con solo `r n` datos es normal y no cambia la conclusión.
+
+- Dispersión: hay cierta variación (el residuo más grande es `r round(max(abs(e)), 2)`), pero con solo `r n` datos es normal y no cambia la conclusión.
+
 ---
 
-## Inciso c: Pronóstico de la VMP para una distancia escalada de 20 e intervalo de predicción del 95%
+## Inciso 3: Pronóstico de la VMP para una distancia escalada de 20 e intervalo de predicción del 95%
 
 Como el modelo está en escala logarítmica, primero se pronostica $\ln(\text{VMP})$ en $u_0 = \ln(20)$:
 
@@ -1029,7 +1046,7 @@ $$
 
 ### Paso 1: Pronóstico
 
-```{r pronostico}
+```{r pronostico3}
 x0 <- 20
 u0 <- log(x0)
 w0 <- b0 + b1 * u0
@@ -1096,7 +1113,9 @@ Con un 95% de confianza, la VMP de una nueva medición estará entre `r round(li
 
 El intervalo es amplio porque los datos son pocos (`r n`) y bastante dispersos.
 
-## Inciso d: Verificación de los supuestos de los errores
+***
+
+## Inciso 4: Verificación de los supuestos de los errores
 
 El modelo supone que los errores $\varepsilon_i$ tienen media cero, varianza constante, distribución normal y son independientes: $\varepsilon_i \sim N(0, \sigma^2)$ independientes. Los residuos $e_i$ (del modelo en escala logarítmica) estiman a los errores.
 
@@ -1176,10 +1195,159 @@ col.names = c("Supuesto", "Estadístico", "$p$-valor", "Decisión ($\\alpha = 0.
 - Normalidad: se cumple. Los puntos del gráfico Q-Q siguen la recta y la prueba de Shapiro-Wilk da $p = `r round(sw$p.value, 4)`$, por lo que no se rechaza la normalidad. (Con solo `r n` observaciones la prueba tiene poca potencia, así que conviene apoyarse también en el gráfico.)
 - Independencia: no hay evidencia clara de dependencia. El estadístico de Durbin-Watson es $d = `r round(dw, 3)`$ y la autocorrelación de orden 1 de los residuos es `r round(r1, 3)`. Según las tablas de Durbin-Watson para $n = 14$, $k = 1$ y $\alpha = 0.05$ ($d_L \approx 1.045$, $d_U \approx 1.350$), este valor cae entre $d_L$ y $d_U$, por lo que la prueba es no concluyente. Además, los datos no tienen necesariamente un orden temporal, así que la independencia se apoya sobre todo en cómo se recolectaron las observaciones (mediciones sobre experimentos distintos).
 
-En conjunto, los supuestos del modelo en escala logarítmica son razonables, lo que respalda el uso de la recta y del intervalo de predicción del inciso c.
+En conjunto, los supuestos del modelo en escala logarítmica son razonables, lo que respalda el uso de la recta y del intervalo de predicción del inciso 3.
 
+***
 
+# Sección 7.10. Ejercicio 13
 
+Variables:
+
+- $x$: temperatura del recipiente (°C), variable explicativa.
+- $y$: producción (%), variable respuesta.
+
+Cargamos los datos
+
+```{r datos-13}
+x13 <- c(150, 150, 150, 200, 200, 200, 250, 250, 300, 300, 300, 300)
+y13 <- c(77.4, 76.7, 78.2, 84.1, 84.5, 83.7, 88.9, 89.2, 94.7, 94.8, 94.7, 95.9)
+n13 <- length(x13)
+
+datos13 <- data.frame(Temperatura = x13, Produccion = y13)
+kable(datos13, col.names = c("Temperatura (°C)", "Producción (%)"))
+```
+
+## Inciso 1: Estimadores de $\beta_0$, $\beta_1$ y $\sigma^2$
+
+```{r estimadores-13}
+xbar13 <- mean(x13)
+ybar13 <- mean(y13)
+
+Sxx13 <- sum((x13 - xbar13)^2)
+Sxy13 <- sum((x13 - xbar13) * (y13 - ybar13))
+
+b1_13 <- Sxy13 / Sxx13
+b0_13 <- ybar13 - b1_13 * xbar13
+
+yhat13 <- b0_13 + b1_13 * x13
+e13 <- y13 - yhat13
+
+SCE13 <- sum(e13^2)
+gl13 <- n13 - 2
+s2_13 <- SCE13 / gl13
+s13 <- sqrt(s2_13)
+
+c(beta0_hat = b0_13, beta1_hat = b1_13, s2 = s2_13)
+```
+
+Verificación con `lm()`:
+
+```{r lm-13}
+modelo13 <- lm(Produccion ~ Temperatura, data = datos13)
+summary(modelo13)
+```
+
+**Respuesta:** $\hat{\beta}_0 = `r round(b0_13, 4)`$, $\hat{\beta}_1 = `r round(b1_13, 4)`$ y $\hat{\sigma}^2 = s^2 = `r round(s2_13, 4)`$.
+
+## Inciso 2: ¿Se puede concluir que $\beta_0 \neq 0$?
+
+Se prueba $H_0: \beta_0 = 0$ contra $H_1: \beta_0 \neq 0$ con $t = \dfrac{\hat{\beta}_0}{s_{\hat{\beta}_0}}$, donde $s_{\hat{\beta}_0} = s\sqrt{\dfrac{1}{n} + \dfrac{\bar{x}^2}{S_{xx}}}$.
+
+```{r prueba-b0-13}
+se_b0_13 <- s13 * sqrt(1 / n13 + xbar13^2 / Sxx13)
+t_b0_13 <- b0_13 / se_b0_13
+p_b0_13 <- 2 * pt(abs(t_b0_13), df = gl13, lower.tail = FALSE)
+c(error_est = se_b0_13, t = t_b0_13, p_valor = p_b0_13)
+```
+
+**Respuesta:** como $t = `r round(t_b0_13, 2)`$ y el $p$-valor es prácticamente 0 ($p < 0.05$), se rechaza $H_0$. Sí se puede concluir que $\beta_0 \neq 0$.
+
+## Inciso 3: ¿Se puede concluir que $\beta_1 \neq 0$?
+
+Se prueba $H_0: \beta_1 = 0$ contra $H_1: \beta_1 \neq 0$ con $t = \dfrac{\hat{\beta}_1}{s_{\hat{\beta}_1}}$, donde $s_{\hat{\beta}_1} = \dfrac{s}{\sqrt{S_{xx}}}$.
+
+```{r prueba-b1-13}
+se_b1_13 <- s13 / sqrt(Sxx13)
+t_b1_13 <- b1_13 / se_b1_13
+p_b1_13 <- 2 * pt(abs(t_b1_13), df = gl13, lower.tail = FALSE)
+c(error_est = se_b1_13, t = t_b1_13, p_valor = p_b1_13)
+```
+
+**Respuesta:** como $t = `r round(t_b1_13, 2)`$ y el $p$-valor es prácticamente 0 ($p < 0.05$), se rechaza $H_0$. Sí se puede concluir que $\beta_1 \neq 0$: la temperatura influye linealmente en la producción.
+
+## Inciso 4: Gráfica de residuos
+
+```{r residuos-13}
+ggplot(data.frame(yhat = yhat13, e = e13), aes(x = yhat, y = e)) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "gray40") +
+  geom_point(size = 3.5, color = "#D7191C") +
+  labs(title = "Residuos vs. valores ajustados",
+       x = "Valores ajustados", y = "Residuo") +
+  theme_minimal(base_size = 13)
+```
+
+**Respuesta:** los residuos se reparten a ambos lados de cero, son pequeños (todos menores que $1.1$ en valor absoluto) y no forman un patrón claro de curva ni de embudo. El modelo lineal parece adecuado.
+
+## Inciso 5: Intervalo de confianza de 95% para $\beta_1$
+
+$$
+\hat{\beta}_1 \pm t_{0.975,\,n-2}\, s_{\hat{\beta}_1}
+$$
+
+```{r ic-b1-13}
+tcrit13 <- qt(0.975, df = gl13)
+margen_b1_13 <- tcrit13 * se_b1_13
+
+ic_b1_13 <- c(b1_13 - margen_b1_13, b1_13 + margen_b1_13)
+ic_b1_13
+
+# Comprobación con confint
+confint(modelo13, "Temperatura", level = 0.95)
+```
+
+**Respuesta:** con una confianza del 95%, $\beta_1$ está entre `r round(ic_b1_13[1], 4)` y `r round(ic_b1_13[2], 4)`. Es decir, por cada grado más de temperatura, la producción aumenta entre `r round(ic_b1_13[1], 4)` y `r round(ic_b1_13[2], 4)` puntos porcentuales.
+
+## Inciso 6: Intervalo de confianza de 95% para la producción media a 225 °C
+
+$$
+\hat{y}_0 \pm t_{0.975,\,n-2}\; s \sqrt{\frac{1}{n} + \frac{(x_0 - \bar{x})^2}{S_{xx}}}
+$$
+
+```{r ic-media-13}
+x0_13 <- 225
+y0_13 <- b0_13 + b1_13 * x0_13
+
+h13 <- 1 / n13 + (x0_13 - xbar13)^2 / Sxx13
+margen_media_13 <- tcrit13 * s13 * sqrt(h13)
+
+ic_media_13 <- c(y0_13 - margen_media_13, y0_13 + margen_media_13)
+c(y_hat = y0_13, ic_media_13)
+
+# Comprobación con predict
+predict(modelo13, newdata = data.frame(Temperatura = x0_13),
+        interval = "confidence", level = 0.95)
+```
+
+**Respuesta:** a 225 °C la producción estimada es `r round(y0_13, 4)`%. Con una confianza del 95%, la producción **media** a esa temperatura está entre `r round(ic_media_13[1], 3)`% y `r round(ic_media_13[2], 3)`%.
+
+## Inciso 7: Intervalo de predicción de 95% para una producción a 225 °C
+
+$$
+\hat{y}_0 \pm t_{0.975,\,n-2}\; s \sqrt{1 + \frac{1}{n} + \frac{(x_0 - \bar{x})^2}{S_{xx}}}
+$$
+
+```{r ip-13}
+margen_pred_13 <- tcrit13 * s13 * sqrt(1 + h13)
+
+ip_13 <- c(y0_13 - margen_pred_13, y0_13 + margen_pred_13)
+ip_13
+
+# Comprobación con predict
+predict(modelo13, newdata = data.frame(Temperatura = x0_13),
+        interval = "prediction", level = 0.95)
+```
+
+**Respuesta:** con una confianza del 95%, la producción de **una nueva corrida** a 225 °C estará entre `r round(ip_13[1], 3)`% y `r round(ip_13[2], 3)`%. Este intervalo es más amplio que el del inciso 6 porque, además de la incertidumbre sobre la media, incluye la variación propia de una observación individual.
 
 
 
