@@ -469,3 +469,717 @@ ggplot(datos10, aes(x = x, y = y)) +
 ```
 
 **Respuesta:** $\hat{y} = e^{\hat{z}} = e^{-0.0573} \approx 0.9443$. Es un pronosticador razonable porque $z = \ln y$ tiene una relación lineal con $x$, así que $y$ se comporta como una función exponencial de $x$, que es la curva que muestra el diagrama de $(x, y)$. Al aplicar la exponencial a $\hat{z}$ se regresa a la escala original de $y$, y el valor obtenido (0.9443) está entre los valores observados en $x = 4$ ($y = 0.5$) y $x = 5$ ($y = 1.3$), mientras que la recta sobre $(x, y)$ daba 2.1491, muy lejos de esos valores.
+
+
+## Sección 7.10. Ejercicio 1.
+
+Variables:
+
+- $x$: volumen de la partícula (cm$^3$), variable explicativa.
+- $y$: porcentaje de ceniza, variable respuesta.
+
+Cargamos los datos
+
+```{r datos}
+x <- c(0.01, 0.06, 0.58, 2.24, 15.55, 276.02)   
+y <- c(3.32, 4.05, 5.69, 7.06, 8.17, 9.36)      
+n <- length(x)
+
+datos <- data.frame(Volumen = x, Ceniza = y)
+kable(datos)
+```
+
+Antes de ajustar cualquier modelo, miramos la forma de los datos:
+
+```{r dispersion}
+ggplot(datos, aes(x = Volumen, y = Ceniza)) +
+  geom_point(size = 3.5, color = "#2C7BB6") +
+  labs(title = "Porcentaje de ceniza vs. volumen",
+       x = "Volumen (cm³)", y = "Porcentaje de ceniza") +
+  theme_minimal(base_size = 13)
+```
+
+El volumen abarca varios órdenes de magnitud (de 0.01 a 276.02): cinco de los seis puntos quedan agrupados cerca del origen y uno está muy alejado. Además, la ceniza crece rápido al inicio y luego se "aplana", por lo que se espera que una recta directa sobre $x$ no sea adecuada.
+
+---
+
+## Inciso a: Recta de mínimos cuadrados de $y$ sobre $x$
+
+El modelo es
+$$
+y_i = \beta_0 + \beta_1 x_i + \varepsilon_i,
+$$
+y la recta ajustada es $\hat{y} = \hat{\beta}_0 + \hat{\beta}_1 x$, con
+
+$$
+\hat{\beta}_1 = \frac{S_{xy}}{S_{xx}},
+\qquad
+\hat{\beta}_0 = \bar{y} - \hat{\beta}_1 \bar{x}.
+$$
+
+### Paso 1: Medias, sumas de cuadrados y productos cruzados
+
+```{r sumas-a}
+xbar_a <- mean(x)
+ybar <- mean(y)
+
+Sxx_a <- sum((x - xbar_a)^2)
+Sxy_a <- sum((x - xbar_a) * (y - ybar))
+Syy   <- sum((y - ybar)^2)
+
+c(xbar = xbar_a, ybar = ybar, Sxx = Sxx_a, Sxy = Sxy_a, Syy = Syy)
+```
+
+### Paso 2: Estimadores $\hat{\beta}_1$ y $\hat{\beta}_0$
+
+```{r coeficientes-a}
+b1_a <- Sxy_a / Sxx_a
+b0_a <- ybar - b1_a * xbar_a
+c(beta0_hat = b0_a, beta1_hat = b1_a)
+```
+
+La recta de mínimos cuadrados es
+
+```{r ecuacion-a, results='asis', echo=FALSE}
+signo <- ifelse(b1_a >= 0, "+", "-")
+cat(sprintf("$$\\hat{y} = %.4f %s %.4f \\, x$$",
+            b0_a, signo, abs(b1_a)))
+```
+
+### Verificación con `lm()`
+
+```{r lm-a}
+modelo_a <- lm(Ceniza ~ Volumen, data = datos)
+summary(modelo_a)
+```
+
+```{r comparacion-a}
+kable(data.frame(
+  Coeficiente = c("Intercepto", "Pendiente"),
+  A_mano = c(b0_a, b1_a),
+  lm = unname(coef(modelo_a))
+), digits = 5)
+```
+
+### Paso 3: Valores ajustados, residuos y gráfico
+
+$$
+\hat{y}_i = \hat{\beta}_0 + \hat{\beta}_1 x_i, \qquad e_i = y_i - \hat{y}_i .
+$$
+
+```{r residuos-a}
+yhat_a <- b0_a + b1_a * x
+e_a <- y - yhat_a
+
+kable(data.frame(i = 1:n, x_i = x, y_i = y, yhat_i = yhat_a, e_i = e_a),
+      digits = 4,
+      col.names = c("i", "$x_i$", "$y_i$", "$\\hat{y}_i$", "$e_i$"),
+      caption = "Valores ajustados y residuos (modelo y ~ x)")
+```
+
+```{r grafico-res-a}
+ggplot(data.frame(yhat = yhat_a, e = e_a), aes(x = yhat, y = e)) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "gray40") +
+  geom_point(size = 3.5, color = "#D7191C") +
+  labs(title = "Residuos vs. valores ajustados: y ~ x",
+       x = "Valores ajustados", y = "Residuo") +
+  theme_minimal(base_size = 13)
+```
+
+```{r r2-a}
+R2_a <- summary(modelo_a)$r.squared
+R2_a
+```
+
+Respuesta: la recta es $\hat{y} = `r round(b0_a, 4)` + `r round(b1_a, 4)`\,x$, con $R^2 = `r round(R2_a, 4)`$. El modelo lineal no parece adecuado:
+
+- Los residuos son grandes (hasta aproximadamente $\pm 2.4$ puntos porcentuales) frente a un rango de $y$ de solo 6 unidades.
+- Los residuos siguen un patrón curvo (negativos, luego positivos y, al final, cerca de cero) en lugar de distribuirse al azar alrededor de cero, lo que indica que la relación no es lineal en $x$.
+- Cinco de los seis valores ajustados quedan agrupados entre 5.58 y 5.80, y solo el punto con $x = 276.02$ queda lejos. Esa observación aislada "jala" la recta y casi no deja que los demás puntos la determinen.
+
+---
+
+## Inciso b: Recta de mínimos cuadrados de $y$ sobre $\ln(x)$
+
+Definimos $u = \ln(x)$ y ajustamos $\hat{y} = \hat{\beta}_0 + \hat{\beta}_1 u$.
+
+### Paso 1: Estimadores
+
+```{r coeficientes-b}
+u <- log(x)
+
+ubar <- mean(u)
+Suu <- sum((u - ubar)^2)
+Suy <- sum((u - ubar) * (y - ybar))
+
+b1_b <- Suy / Suu
+b0_b <- ybar - b1_b * ubar
+c(beta0_hat = b0_b, beta1_hat = b1_b)
+```
+
+La recta de mínimos cuadrados es
+
+```{r ecuacion-b, results='asis', echo=FALSE}
+signo <- ifelse(b1_b >= 0, "+", "-")
+cat(sprintf("$$\\hat{y} = %.4f %s %.4f \\, \\ln(x)$$",
+            b0_b, signo, abs(b1_b)))
+```
+
+### Verificación con `lm()`
+
+```{r lm-b}
+modelo_b <- lm(Ceniza ~ log(Volumen), data = datos)
+summary(modelo_b)
+```
+
+```{r comparacion-b}
+kable(data.frame(
+  Coeficiente = c("Intercepto", "Pendiente"),
+  A_mano = c(b0_b, b1_b),
+  lm = unname(coef(modelo_b))
+), digits = 5)
+```
+
+### Paso 2: Valores ajustados, residuos y gráfico
+
+```{r residuos-b}
+yhat_b <- b0_b + b1_b * u
+e_b <- y - yhat_b
+
+kable(data.frame(i = 1:n, x_i = x, u_i = u, y_i = y, yhat_i = yhat_b, e_i = e_b),
+      digits = 4,
+      col.names = c("i", "$x_i$", "$\\ln(x_i)$", "$y_i$", "$\\hat{y}_i$", "$e_i$"),
+      caption = "Valores ajustados y residuos (modelo y ~ ln(x))")
+```
+
+```{r grafico-res-b}
+ggplot(data.frame(yhat = yhat_b, e = e_b), aes(x = yhat, y = e)) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "gray40") +
+  geom_point(size = 3.5, color = "#D7191C") +
+  labs(title = "Residuos vs. valores ajustados: y ~ ln(x)",
+       x = "Valores ajustados", y = "Residuo") +
+  theme_minimal(base_size = 13)
+```
+
+```{r r2-b}
+R2_b <- summary(modelo_b)$r.squared
+R2_b
+```
+
+Respuesta: la recta es $\hat{y} = `r round(b0_b, 4)` + `r round(b1_b, 4)`\,\ln(x)$, con $R^2 = `r round(R2_b, 4)`$. El modelo lineal en $\ln(x)$ **sí** parece adecuado:
+
+- Los residuos son pequeños (en valor absoluto, menores que `r round(max(abs(e_b)), 2)`) y mucho menores que en el inciso a.
+- No se observa una curvatura marcada: los residuos se reparten a ambos lados de cero y ningún punto domina el ajuste, porque el logaritmo "abre" la escala y separa los volúmenes pequeños.
+- El $R^2$ es muy alto, por lo que el modelo explica casi toda la variabilidad del porcentaje de ceniza.
+
+---
+
+## Inciso c: Recta de mínimos cuadrados de $y$ sobre $\sqrt{x}$
+
+Definimos $v = \sqrt{x}$ y ajustamos $\hat{y} = \hat{\beta}_0 + \hat{\beta}_1 v$.
+
+### Paso 1: Estimadores
+
+```{r coeficientes-c}
+v <- sqrt(x)
+
+vbar <- mean(v)
+Svv <- sum((v - vbar)^2)
+Svy <- sum((v - vbar) * (y - ybar))
+
+b1_c <- Svy / Svv
+b0_c <- ybar - b1_c * vbar
+c(beta0_hat = b0_c, beta1_hat = b1_c)
+```
+
+La recta de mínimos cuadrados es
+
+```{r ecuacion-c, results='asis', echo=FALSE}
+signo <- ifelse(b1_c >= 0, "+", "-")
+cat(sprintf("$$\\hat{y} = %.4f %s %.4f \\, \\sqrt{x}$$",
+            b0_c, signo, abs(b1_c)))
+```
+
+### Verificación con `lm()`
+
+```{r lm-c}
+modelo_c <- lm(Ceniza ~ sqrt(Volumen), data = datos)
+summary(modelo_c)
+```
+
+```{r comparacion-c}
+kable(data.frame(
+  Coeficiente = c("Intercepto", "Pendiente"),
+  A_mano = c(b0_c, b1_c),
+  lm = unname(coef(modelo_c))
+), digits = 5)
+```
+
+### Paso 2: Valores ajustados, residuos y gráfico
+
+```{r residuos-c}
+yhat_c <- b0_c + b1_c * v
+e_c <- y - yhat_c
+
+kable(data.frame(i = 1:n, x_i = x, v_i = v, y_i = y, yhat_i = yhat_c, e_i = e_c),
+      digits = 4,
+      col.names = c("i", "$x_i$", "$\\sqrt{x_i}$", "$y_i$", "$\\hat{y}_i$", "$e_i$"),
+      caption = "Valores ajustados y residuos (modelo y ~ raíz de x)")
+```
+
+```{r grafico-res-c}
+ggplot(data.frame(yhat = yhat_c, e = e_c), aes(x = yhat, y = e)) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "gray40") +
+  geom_point(size = 3.5, color = "#D7191C") +
+  labs(title = "Residuos vs. valores ajustados: y ~ raíz de x",
+       x = "Valores ajustados", y = "Residuo") +
+  theme_minimal(base_size = 13)
+```
+
+```{r r2-c}
+R2_c <- summary(modelo_c)$r.squared
+R2_c
+```
+
+Respuesta: la recta es $\hat{y} = `r round(b0_c, 4)` + `r round(b1_c, 4)`\,\sqrt{x}$, con $R^2 = `r round(R2_c, 4)`$. El modelo lineal en $\sqrt{x}$ no parece adecuado:
+
+- Mejora un poco respecto al inciso a, pero la raíz cuadrada no comprime lo suficiente la escala: el punto con $x = 276.02$ sigue muy alejado de los demás.
+- Los residuos llegan hasta aproximadamente $\pm 1.9$ y siguen un patrón curvo (negativos, positivos y de nuevo negativos), lo que indica que aún queda curvatura sin explicar.
+
+---
+
+## Comparación de los tres modelos
+
+```{r comparacion-modelos}
+resumen <- data.frame(
+  Modelo = c("y ~ x", "y ~ ln(x)", "y ~ raíz(x)"),
+  R2 = c(R2_a, R2_b, R2_c),
+  s  = c(summary(modelo_a)$sigma, summary(modelo_b)$sigma, summary(modelo_c)$sigma)
+)
+kable(resumen, digits = 4,
+      col.names = c("Modelo", "$R^2$", "$s$ (error estándar residual)"))
+
+mejor <- resumen$Modelo[which.max(resumen$R2)]
+mejor
+```
+
+```{r grafico-comparacion}
+grilla <- data.frame(Volumen = seq(0.01, 276.02, length.out = 500))
+curvas <- rbind(
+  data.frame(Volumen = grilla$Volumen, Ceniza = b0_a + b1_a * grilla$Volumen,
+             Modelo = "y ~ x"),
+  data.frame(Volumen = grilla$Volumen, Ceniza = b0_b + b1_b * log(grilla$Volumen),
+             Modelo = "y ~ ln(x)"),
+  data.frame(Volumen = grilla$Volumen, Ceniza = b0_c + b1_c * sqrt(grilla$Volumen),
+             Modelo = "y ~ raíz(x)")
+)
+
+ggplot(datos, aes(x = Volumen, y = Ceniza)) +
+  geom_line(data = curvas, aes(color = Modelo), linewidth = 1) +
+  geom_point(size = 3.5) +
+  scale_x_log10() +
+  labs(title = "Los tres modelos sobre los datos (eje x en escala logarítmica)",
+       x = "Volumen (cm³, escala log)", y = "Porcentaje de ceniza") +
+  theme_minimal(base_size = 13)
+```
+
+Conclusión: el modelo más adecuado es `r mejor`, pues tiene el mayor $R^2$ (`r round(max(resumen$R2), 4)`), el menor error estándar residual y residuos sin un patrón de curvatura marcado.
+
+---
+
+## Inciso d: Pronóstico para un volumen de 50 cm³
+
+Con el modelo $\hat{y} = \hat{\beta}_0 + \hat{\beta}_1 \ln(x)$:
+
+$$
+\hat{y}(50) = \hat{\beta}_0 + \hat{\beta}_1 \ln(50).
+$$
+
+```{r pronostico}
+x0 <- 50
+u0 <- log(x0)
+y0 <- b0_b + b1_b * u0
+c(ln_x0 = u0, y_hat = y0)
+
+# Comprobación con predict
+predict(modelo_b, newdata = data.frame(Volumen = x0))
+```
+
+Respuesta: para partículas con un volumen de 50 cm$^3$ se pronostica un porcentaje de ceniza de aproximadamente `r round(y0, 3)`.
+
+Como $0.01 \le 50 \le 276.02$, el volumen está dentro del rango de los datos observados, por lo que el pronóstico es una interpolación y es confiable.
+
+Nota: el enunciado escribe "50 m³", pero los datos están en cm³, así que se trabaja con 50 cm³.
+
+---
+
+## Inciso e: Intervalo de confianza del 95% para la media de $y$ en $x = 50$
+
+El intervalo de confianza para $E(y \mid x_0)$ es
+
+$$
+\hat{y}_0 \;\pm\; t_{1-\alpha/2,\,n-2}\; s \sqrt{\frac{1}{n} + \frac{(u_0 - \bar{u})^2}{S_{uu}}},
+\qquad s^2 = \frac{\text{SCE}}{n-2},
+$$
+
+donde $u_0 = \ln(x_0)$.
+
+### Paso 1: Ingredientes
+
+```{r ic-ingredientes}
+alpha <- 0.05
+gl <- n - 2
+tcrit <- qt(1 - alpha / 2, df = gl)
+
+SCE_b <- sum(e_b^2)
+s <- sqrt(SCE_b / gl)
+
+c(gl = gl, t_critico = tcrit, SCE = SCE_b, s = s)
+```
+
+### Paso 2: Error estándar de la media estimada y límites
+
+```{r ic-limites}
+se_media <- s * sqrt(1 / n + (u0 - ubar)^2 / Suu)
+margen <- tcrit * se_media
+
+li <- y0 - margen
+ls <- y0 + margen
+
+c(se_media = se_media, margen = margen, limite_inf = li, limite_sup = ls)
+
+# Comprobación con predict
+predict(modelo_b, newdata = data.frame(Volumen = x0),
+        interval = "confidence", level = 0.95)
+```
+
+Respuesta: con una confianza del 95%, el porcentaje promedio de ceniza de las partículas de carbón con un volumen de 50 cm$^3$ está entre `r round(li, 3)` y `r round(ls, 3)`, es decir, $(`r round(li, 3)`,\ `r round(ls, 3)`)$.
+
+Este intervalo es para la media del porcentaje de ceniza en $x = 50$, no para una partícula individual; para una observación individual se necesitaría un intervalo de predicción, que es más amplio.
+
+## Sección 7.10. Ejercicio 3.
+
+Variables:
+
+- $x$: distancia escalada (m/kg$^{0.5}$), variable explicativa.
+- $y$: VMP (mm/s), variable respuesta.
+
+Cargamos los datos
+
+```{r datos}
+x <- c(47.33, 9.6, 15.8, 24.3, 23.0, 16.3, 39.8, 29.94, 10.9, 8.63, 28.64, 18.21, 33.0, 34.0)  # Distancia escalada
+y <- c(1.4, 15.7, 2.54, 1.14, 0.889, 1.65, 1.4, 1.02, 4.57, 6.6, 1.02, 3.94, 1.4, 1.4)        # VMP (mm/s)
+n <- length(x)
+
+datos <- data.frame(Distancia = x, VMP = y)
+kable(datos)
+```
+
+---
+
+## Inciso a: Gráfico de la VMP contra la distancia escalada
+
+```{r dispersion}
+ggplot(datos, aes(x = Distancia, y = VMP)) +
+  geom_point(size = 3.5, color = "#2C7BB6") +
+  labs(title = "VMP vs. distancia escalada",
+       x = "Distancia escalada (m/kg^0.5)", y = "VMP (mm/s)") +
+  theme_minimal(base_size = 13)
+```
+
+```{r correlacion-ab}
+cor(x, y)
+```
+
+Respuesta: la relación no parece lineal. La VMP disminuye al aumentar la distancia escalada, pero lo hace de forma curva: cae muy rápido para distancias pequeñas (VMP alta) y se aplana para distancias grandes (VMP cercana a 1). Además, la dispersión es mayor cuando la VMP es alta, y la correlación lineal es solo $r = `r round(cor(x, y), 4)`$. Esta forma sugiere una relación de potencia, que se linealiza con logaritmos en ambas variables.
+
+---
+
+## Inciso b: Recta de mínimos cuadrados para $\ln(\text{VMP}) = \beta_0 + \beta_1 \ln(\text{distancia escalada}) + \epsilon$
+
+Definimos $u = \ln(x)$ y $w = \ln(y)$. El modelo es
+$$
+w_i = \beta_0 + \beta_1 u_i + \varepsilon_i,
+$$
+y la recta ajustada es $\hat{w} = \hat{\beta}_0 + \hat{\beta}_1 u$, con
+
+$$
+\hat{\beta}_1 = \frac{S_{uw}}{S_{uu}},
+\qquad
+\hat{\beta}_0 = \bar{w} - \hat{\beta}_1 \bar{u}.
+$$
+
+### Paso 1: Transformación, medias y sumas de cuadrados
+
+```{r sumas}
+u <- log(x)
+w <- log(y)
+
+ubar <- mean(u)
+wbar <- mean(w)
+
+Suu <- sum((u - ubar)^2)
+Suw <- sum((u - ubar) * (w - wbar))
+Sww <- sum((w - wbar)^2)
+
+c(ubar = ubar, wbar = wbar, Suu = Suu, Suw = Suw, Sww = Sww)
+```
+
+### Paso 2: Estimadores $\hat{\beta}_1$ y $\hat{\beta}_0$
+
+```{r coeficientes}
+b1 <- Suw / Suu
+b0 <- wbar - b1 * ubar
+c(beta0_hat = b0, beta1_hat = b1)
+```
+
+La recta de mínimos cuadrados es
+
+```{r ecuacion, results='asis', echo=FALSE}
+signo <- ifelse(b1 >= 0, "+", "-")
+cat(sprintf("$$\\widehat{\\ln(\\text{VMP})} = %.4f %s %.4f \\, \\ln(\\text{distancia escalada})$$",
+            b0, signo, abs(b1)))
+```
+
+### Verificación con `lm()`
+
+```{r lm}
+modelo <- lm(log(VMP) ~ log(Distancia), data = datos)
+summary(modelo)
+```
+
+```{r comparacion}
+kable(data.frame(
+  Coeficiente = c("Intercepto", "Pendiente"),
+  A_mano = c(b0, b1),
+  lm = unname(coef(modelo))
+), digits = 5)
+```
+
+### Paso 3: Valores ajustados, residuos y gráfico
+
+$$
+\hat{w}_i = \hat{\beta}_0 + \hat{\beta}_1 u_i, \qquad e_i = w_i - \hat{w}_i .
+$$
+
+```{r residuos}
+what <- b0 + b1 * u
+e <- w - what
+
+kable(data.frame(i = 1:n, x_i = x, u_i = u, w_i = w, what_i = what, e_i = e),
+      digits = 4,
+      col.names = c("i", "$x_i$", "$u_i = \\ln(x_i)$", "$w_i = \\ln(y_i)$",
+                    "$\\hat{w}_i$", "$e_i$"),
+      caption = "Valores ajustados y residuos (escala logarítmica)")
+```
+
+Propiedad de verificación: con intercepto en el modelo, $\sum_{i=1}^{n} e_i = 0$.
+
+```{r suma-residuos}
+sum(e)
+```
+
+```{r grafico-residuos}
+ggplot(data.frame(what = what, e = e), aes(x = what, y = e)) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "gray40") +
+  geom_point(size = 3.5, color = "#D7191C") +
+  labs(title = "Residuos vs. valores ajustados",
+       x = "Valores ajustados de ln(VMP)", y = "Residuo") +
+  theme_minimal(base_size = 13)
+```
+
+```{r r2}
+R2 <- summary(modelo)$r.squared
+s <- summary(modelo)$sigma
+c(R2 = R2, s = s)
+```
+
+Gráfico del ajuste en la escala logarítmica:
+
+```{r grafico-loglog}
+ggplot(data.frame(u = u, w = w), aes(x = u, y = w)) +
+  geom_point(size = 3.5, color = "#2C7BB6") +
+  geom_smooth(method = "lm", se = FALSE, color = "#D7191C") +
+  labs(title = "ln(VMP) vs. ln(distancia escalada)",
+       x = "ln(distancia escalada)", y = "ln(VMP)") +
+  theme_minimal(base_size = 13)
+```
+
+Sí, el modelo lineal parece adecuado. Las razones son:
+
+- Ajuste: $R^2 = `r round(R2, 4)`$, es decir, el modelo explica cerca del `r round(100 * R2)`% de la variación de $\ln(\text{VMP})$. Es un ajuste bueno, aunque no perfecto.
+- Residuos: en el gráfico los puntos quedan repartidos por encima y por debajo de cero, sin una forma clara (ni curva ni embudo). Eso es lo que se espera de un buen modelo.
+- Dispersión:hay cierta variación (el residuo más grande es `r round(max(abs(e)), 2)`), pero con solo `r n` datos es normal y no cambia la conclusión.
+---
+
+## Inciso c: Pronóstico de la VMP para una distancia escalada de 20 e intervalo de predicción del 95%
+
+Como el modelo está en escala logarítmica, primero se pronostica $\ln(\text{VMP})$ en $u_0 = \ln(20)$:
+
+$$
+\hat{w}_0 = \hat{\beta}_0 + \hat{\beta}_1 \ln(20).
+$$
+
+El intervalo de predicción del 95% para una nueva observación es
+
+$$
+\hat{w}_0 \;\pm\; t_{1-\alpha/2,\,n-2}\; s \sqrt{1 + \frac{1}{n} + \frac{(u_0 - \bar{u})^2}{S_{uu}}},
+\qquad s^2 = \frac{\text{SCE}}{n-2}.
+$$
+
+### Paso 1: Pronóstico
+
+```{r pronostico}
+x0 <- 20
+u0 <- log(x0)
+w0 <- b0 + b1 * u0
+c(ln_x0 = u0, w_hat = w0)
+```
+
+### Paso 2: Intervalo de predicción en escala logarítmica
+
+```{r intervalo}
+alpha <- 0.05
+gl <- n - 2
+tcrit <- qt(1 - alpha / 2, df = gl)
+
+SCE <- sum(e^2)
+s_man <- sqrt(SCE / gl)
+
+se_pred <- s_man * sqrt(1 + 1 / n + (u0 - ubar)^2 / Suu)
+margen <- tcrit * se_pred
+
+li_w <- w0 - margen
+ls_w <- w0 + margen
+
+c(gl = gl, t_critico = tcrit, s = s_man, se_pred = se_pred,
+  limite_inf = li_w, limite_sup = ls_w)
+
+# Comprobación con predict
+predict(modelo, newdata = data.frame(Distancia = x0),
+        interval = "prediction", level = 0.95)
+```
+
+### Paso 3: Regreso a la escala original
+
+Como $\text{VMP} = e^{w}$ y la exponencial es creciente, se aplica a la estimación y a los límites:
+
+```{r original}
+y0 <- exp(w0)
+li <- exp(li_w)
+ls <- exp(ls_w)
+c(VMP_hat = y0, limite_inf = li, limite_sup = ls)
+```
+
+```{r grafico-intervalo}
+grilla <- data.frame(Distancia = seq(min(x), max(x), length.out = 200))
+pred <- predict(modelo, newdata = grilla, interval = "prediction", level = 0.95)
+banda <- data.frame(Distancia = grilla$Distancia,
+                    fit = exp(pred[, "fit"]),
+                    lwr = exp(pred[, "lwr"]),
+                    upr = exp(pred[, "upr"]))
+
+ggplot() +
+  geom_ribbon(data = banda, aes(x = Distancia, ymin = lwr, ymax = upr),
+              fill = "#2C7BB6", alpha = 0.2) +
+  geom_line(data = banda, aes(x = Distancia, y = fit), color = "#D7191C", linewidth = 1) +
+  geom_point(data = datos, aes(x = Distancia, y = VMP), size = 3.5, color = "#2C7BB6") +
+  geom_point(aes(x = x0, y = y0), color = "#1A9641", size = 4, shape = 17) +
+  labs(title = "Curva ajustada e intervalo de predicción del 95%",
+       x = "Distancia escalada (m/kg^0.5)", y = "VMP (mm/s)") +
+  theme_minimal(base_size = 13)
+```
+
+Respuesta: para una distancia escalada de 20 se pronostica una VMP de aproximadamente `r round(y0, 3)` mm/s.
+
+Con un 95% de confianza, la VMP de una nueva medición estará entre `r round(li, 3)` y `r round(ls, 3)` mm/s, es decir, $(`r round(li, 3)`,\ `r round(ls, 3)`)$.
+
+El intervalo es amplio porque los datos son pocos (`r n`) y bastante dispersos.
+
+## Inciso d: Verificación de los supuestos de los errores
+
+El modelo supone que los errores $\varepsilon_i$ tienen media cero, varianza constante, distribución normal y son independientes: $\varepsilon_i \sim N(0, \sigma^2)$ independientes. Los residuos $e_i$ (del modelo en escala logarítmica) estiman a los errores.
+
+### Supuesto 1: Media cero
+
+```{r media-cero}
+mean(e)
+```
+
+La media de los residuos es prácticamente 0 (esto se cumple siempre por construcción en mínimos cuadrados con intercepto). Lo que sí debe revisarse es que no haya un patrón en el gráfico de residuos vs. ajustados, que ya se mostró en el inciso b.
+
+### Supuesto 2: Varianza constante (homocedasticidad)
+
+Además del gráfico de residuos vs. valores ajustados (sin forma de embudo), aplicamos la prueba de Breusch-Pagan: se regresa $e_i^2$ sobre los valores ajustados y el estadístico es $LM = n R^2_{\text{aux}}$, que bajo $H_0$ (varianza constante) sigue una $\chi^2_1$.
+
+```{r breusch-pagan}
+aux <- lm(e^2 ~ what)
+LM_bp <- n * summary(aux)$r.squared
+p_bp <- pchisq(LM_bp, df = 1, lower.tail = FALSE)
+c(LM = LM_bp, p_valor = p_bp)
+```
+
+### Supuesto 3: Normalidad
+
+```{r qqplot}
+ggplot(data.frame(e = e), aes(sample = e)) +
+  stat_qq(size = 3, color = "#2C7BB6") +
+  stat_qq_line(color = "#D7191C") +
+  labs(title = "Gráfico Q-Q normal de los residuos",
+       x = "Cuantiles teóricos", y = "Cuantiles de los residuos") +
+  theme_minimal(base_size = 13)
+```
+
+```{r shapiro}
+sw <- shapiro.test(e)
+sw
+```
+
+### Supuesto 4: Independencia
+
+```{r independencia}
+ggplot(data.frame(i = 1:n, e = e), aes(x = i, y = e)) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "gray40") +
+  geom_line(color = "gray60") +
+  geom_point(size = 3.5, color = "#D7191C") +
+  labs(title = "Residuos vs. orden de observación",
+       x = "Orden de observación", y = "Residuo") +
+  theme_minimal(base_size = 13)
+```
+
+Estadístico de Durbin-Watson, $d = \dfrac{\sum_{i=2}^{n}(e_i - e_{i-1})^2}{\sum_{i=1}^{n} e_i^2}$:
+
+```{r durbin-watson}
+dw <- sum(diff(e)^2) / sum(e^2)
+r1 <- cor(e[-n], e[-1])
+c(DW = dw, autocorrelacion_lag1 = r1)
+```
+
+### Resumen de las pruebas
+
+```{r resumen-supuestos}
+kable(data.frame(
+  Supuesto = c("Varianza constante (Breusch-Pagan)",
+               "Normalidad (Shapiro-Wilk)"),
+  Estadistico = c(LM_bp, unname(sw$statistic)),
+  p_valor = c(p_bp, sw$p.value),
+  Decision = c(ifelse(p_bp > 0.05, "No se rechaza H0", "Se rechaza H0"),
+               ifelse(sw$p.value > 0.05, "No se rechaza H0", "Se rechaza H0"))
+), digits = 4,
+col.names = c("Supuesto", "Estadístico", "$p$-valor", "Decisión ($\\alpha = 0.05$)"))
+```
+
+**Respuesta:**
+
+- Media cero: se cumple. La media de los residuos es `r signif(mean(e), 3)`, esencialmente 0.
+- Varianza constante: se cumple. En el gráfico de residuos vs. ajustados no hay forma de embudo, y la prueba de Breusch-Pagan da $p = `r round(p_bp, 4)`$, por lo que no se rechaza la homocedasticidad.
+- Normalidad: se cumple. Los puntos del gráfico Q-Q siguen la recta y la prueba de Shapiro-Wilk da $p = `r round(sw$p.value, 4)`$, por lo que no se rechaza la normalidad. (Con solo `r n` observaciones la prueba tiene poca potencia, así que conviene apoyarse también en el gráfico.)
+- Independencia: no hay evidencia clara de dependencia. El estadístico de Durbin-Watson es $d = `r round(dw, 3)`$ y la autocorrelación de orden 1 de los residuos es `r round(r1, 3)`. Según las tablas de Durbin-Watson para $n = 14$, $k = 1$ y $\alpha = 0.05$ ($d_L \approx 1.045$, $d_U \approx 1.350$), este valor cae entre $d_L$ y $d_U$, por lo que la prueba es no concluyente. Además, los datos no tienen necesariamente un orden temporal, así que la independencia se apoya sobre todo en cómo se recolectaron las observaciones (mediciones sobre experimentos distintos).
+
+En conjunto, los supuestos del modelo en escala logarítmica son razonables, lo que respalda el uso de la recta y del intervalo de predicción del inciso c.
+
+
+
+
+
+
